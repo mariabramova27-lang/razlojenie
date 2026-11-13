@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Космический тренажёр: Разложение многочленов | Мягкая математика</title>
+<style>
+  :root{
+    --space-deep:#050813;
+    --space-bg:#0a0e1a;
+    --space-panel:#0f1524;
+    --space-border:#1e2942;
+    --cyan:#00d9ff;
+    --cyan-dim:#0891b2;
+    --mars:#ff6b35;
+    --nebula:#a855f7;
+    --gold:#fbbf24;
+    --green:#10b981;
+    --red:#ef4444;
+    --text:#e2e8f0;
+    --text-dim:#94a3b8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:'Open Sans','Segoe UI',system-ui,sans-serif;
+    background:var(--space-deep);
+    color:var(--text);
+    min-height:100vh;
+    padding:16px;
+    line-height:1.5;
+    overflow-x:hidden;
+    position:relative;
+  }
+  /* Звёздный фон */
+  body::before{
+    content:'';
+    position:fixed;inset:0;
+    background:
+      radial-gradient(2px 2px at 20% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 60% 70%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 80% 10%, var(--cyan), transparent),
+      radial-gradient(1px 1px at 10% 80%, #fff, transparent),
+      radial-gradient(2px 2px at 45% 45%, #fff, transparent),
+      radial-gradient(1px 1px at 90% 50%, var(--gold), transparent),
+      radial-gradient(1.5px 1.5px at 30% 15%, #fff, transparent),
+      radial-gradient(1px 1px at 70% 85%, #fff, transparent),
+      radial-gradient(2px 2px at 15% 55%, var(--nebula), transparent);
+    background-size:200% 200%;
+    background-position:0 0, 40% 60%, 130% 270%, 180% 130%, 60% 40%, 250% 100%, 30% 30%, 90% 90%, 100% 50%;
+    animation:starsMove 120s linear infinite;
+    z-index:0;
+    pointer-events:none;
+    opacity:.7;
+  }
+  body::after{
+    content:'';
+    position:fixed;inset:0;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(168,85,247,.15) 0%, transparent 40%),
+      radial-gradient(circle at 85% 70%, rgba(0,217,255,.1) 0%, transparent 40%),
+      radial-gradient(circle at 50% 90%, rgba(255,107,53,.08) 0%, transparent 35%);
+    z-index:0;
+    pointer-events:none;
+  }
+  @keyframes starsMove{
+    0%{background-position:0 0, 40% 60%, 130% 270%, 180% 130%, 60% 40%, 250% 100%, 30% 30%, 90% 90%, 100% 50%;}
+    100%{background-position:200% 200%, 240% 260%, 330% 470%, 380% 330%, 260% 240%, 450% 300%, 230% 230%, 290% 290%, 300% 250%;}
+  }
+
+  .app{max-width:1150px;margin:0 auto;position:relative;z-index:1;}
+  h1,h2,h3,h4{font-family:'Montserrat','Segoe UI',sans-serif;letter-spacing:.5px;}
+
+  /* ============ HUD ============ */
+  .hud{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    gap:12px;
+    align-items:center;
+    background:rgba(15,21,36,.75);
+    border:1px solid var(--space-border);
+    border-radius:16px;
+    padding:14px 20px;
+    margin-bottom:14px;
+    backdrop-filter:blur(12px);
+    box-shadow:0 0 30px rgba(0,217,255,.08);
+    position:relative;
+  }
+  .hud-left{display:flex;align-items:center;gap:14px;}
+  .hud-avatar{
+    width:52px;height:52px;
+    border-radius:14px;
+    background:radial-gradient(circle at 30% 30%, var(--cyan), var(--cyan-dim));
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;
+    box-shadow:0 0 25px rgba(0,217,255,.5), inset 0 0 15px rgba(255,255,255,.2);
+    position:relative;
+    animation:avatarPulse 3s infinite;
+  }
+  @keyframes avatarPulse{
+    0%,100%{box-shadow:0 0 25px rgba(0,217,255,.5), inset 0 0 15px rgba(255,255,255,.2);}
+    50%{box-shadow:0 0 40px rgba(0,217,255,.8), inset 0 0 20px rgba(255,255,255,.3);}
+  }
+  .hud-avatar .lvl{
+    position:absolute;bottom:-4px;right:-4px;
+    background:var(--gold);color:var(--space-deep);
+    font-size:11px;font-weight:900;
+    padding:2px 7px;border-radius:9px;
+    border:2px solid var(--space-deep);
+    box-shadow:0 0 10px rgba(251,191,36,.6);
+  }
+  .hud-info{flex:1;min-width:140px;}
+  .hud-name{font-size:13px;font-weight:800;color:var(--cyan);margin-bottom:4px;letter-spacing:.5px;}
+  .hud-xp-bar{
+    height:8px;background:rgba(0,0,0,.5);
+    border-radius:6px;overflow:hidden;
+    border:1px solid rgba(0,217,255,.2);
+    position:relative;
+  }
+  .hud-xp-fill{
+    height:100%;
+    background:linear-gradient(90deg, var(--cyan), var(--nebula));
+    width:0%;transition:width .6s ease;
+    border-radius:6px;
+    position:relative;overflow:hidden;
+  }
+  .hud-xp-fill::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent);
+    animation:shine 2s infinite;
+  }
+  @keyframes shine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+  .hud-xp-text{
+    display:flex;justify-content:space-between;
+    font-size:10px;color:var(--text-dim);margin-top:3px;
+  }
+
+  .hud-center{display:flex;gap:10px;}
+  .hud-stat{
+    background:rgba(0,0,0,.35);
+    border:1px solid var(--space-border);
+    border-radius:10px;
+    padding:6px 14px;
+    text-align:center;
+    min-width:76px;
+  }
+  .hud-stat .v{font-size:17px;font-weight:900;color:var(--gold);display:block;line-height:1.1;}
+  .hud-stat .l{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.8px;}
+
+  .hud-right{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;align-items:center;}
+
+  .hud-ad{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(251,191,36,.1);
+    border:1px solid rgba(251,191,36,.3);
+    border-radius:20px;
+    padding:5px 12px;
+    font-size:11px;font-weight:700;
+    color:var(--gold);
+    text-decoration:none;
+    transition:.2s;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .hud-ad:hover{
+    background:rgba(251,191,36,.2);
+    transform:translateY(-1px);
+    box-shadow:0 0 15px rgba(251,191,36,.3);
+  }
+  .hud-ad .dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--gold);
+    animation:dotPulse 2s infinite;
+  }
+  @keyframes dotPulse{
+    0%,100%{opacity:1;transform:scale(1);}
+    50%{opacity:.5;transform:scale(1.3);}
+  }
+
+  .badge{
+    width:32px;height:32px;border-radius:9px;
+    background:rgba(0,0,0,.35);
+    border:1px solid var(--space-border);
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;opacity:.25;transition:.3s;cursor:help;
+  }
+  .badge.on{
+    opacity:1;border-color:var(--gold);
+    background:rgba(251,191,36,.15);
+    box-shadow:0 0 12px rgba(251,191,36,.5);
+    transform:scale(1.05);
+  }
+
+  /* ============ Табы ============ */
+  .tabs{
+    display:flex;gap:8px;flex-wrap:wrap;
+    margin-bottom:16px;
+  }
+  .tab{
+    background:rgba(15,21,36,.75);
+    border:1px solid var(--space-border);
+    border-radius:12px;
+    padding:11px 18px;
+    cursor:pointer;
+    transition:.25s;
+    font-size:13px;
+    color:var(--text-dim);
+    font-weight:700;
+    display:flex;align-items:center;gap:8px;
+    backdrop-filter:blur(10px);
+    position:relative;
+  }
+  .tab:hover{border-color:var(--cyan);color:var(--text);transform:translateY(-2px);}
+  .tab.active{
+    background:linear-gradient(135deg, rgba(0,217,255,.2), rgba(168,85,247,.15));
+    border-color:var(--cyan);
+    color:var(--text);
+    box-shadow:0 0 20px rgba(0,217,255,.3);
+  }
+  .tab .cnt{
+    background:rgba(0,0,0,.5);
+    padding:2px 8px;border-radius:10px;
+    font-size:10px;font-weight:900;
+    color:var(--cyan);
+  }
+  .tab.done{
+    border-color:var(--green);
+    background:linear-gradient(135deg, rgba(16,185,129,.15), rgba(0,217,255,.08));
+  }
+  .tab.done .cnt{color:var(--green);}
+
+  /* ============ Панель ============ */
+  .panel{
+    background:rgba(15,21,36,.75);
+    border:1px solid var(--space-border);
+    border-radius:20px;
+    padding:22px;
+    backdrop-filter:blur(12px);
+    animation:fadeIn .5s ease;
+    box-shadow:0 0 40px rgba(0,217,255,.05);
+  }
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .panel-head{margin-bottom:20px;}
+  .panel-head h2{
+    color:var(--cyan);font-size:22px;margin-bottom:6px;
+    text-shadow:0 0 20px rgba(0,217,255,.5);
+  }
+  .panel-head .sub{color:var(--text-dim);font-size:13px;}
+
+  /* ============ DnD ============ */
+  .dnd-intro{
+    background:rgba(168,85,247,.1);
+    border-left:3px solid var(--nebula);
+    border-radius:10px;
+    padding:12px 16px;
+    margin-bottom:18px;
+    font-size:13px;
+    color:var(--text);
+    line-height:1.6;
+  }
+  .dnd-intro strong{color:var(--nebula);}
+
+  .dnd-chips{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
+    gap:10px;
+    margin-bottom:20px;
+    padding:16px;
+    background:rgba(0,0,0,.3);
+    border-radius:14px;
+    border:1px dashed rgba(0,217,255,.2);
+    min-height:80px;
+  }
+
+  .chip{
+    background:linear-gradient(135deg, rgba(30,41,66,.9), rgba(15,21,36,.9));
+    border:1px solid var(--space-border);
+    border-radius:12px;
+    padding:14px 16px;
+    cursor:grab;
+    font-family:'Courier New',monospace;
+    font-size:15px;
+    font-weight:700;
+    color:var(--text);
+    transition:.2s;
+    user-select:none;
+    text-align:center;
+    position:relative;
+    box-shadow:0 4px 12px rgba(0,0,0,.3);
+  }
+  .chip:hover{
+    border-color:var(--cyan);
+    box-shadow:0 0 20px rgba(0,217,255,.4);
+    transform:translateY(-2px);
+  }
+  .chip.dragging{opacity:.4;}
+  .chip.selected{
+    border-color:var(--gold);
+    box-shadow:0 0 25px rgba(251,191,36,.6);
+    transform:scale(1.03);
+  }
+  .chip.used{
+    opacity:.15;pointer-events:none;
+    transform:scale(.9);
+  }
+  .chip.wrong{
+    animation:shake .4s;
+    border-color:var(--red);
+    box-shadow:0 0 20px rgba(239,68,68,.6);
+  }
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    25%{transform:translateX(-6px)}
+    75%{transform:translateX(6px)}
+  }
+
+  .dnd-zones{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:14px;
+  }
+  @media(max-width:800px){.dnd-zones{grid-template-columns:1fr;}}
+
+  .dnd-zone{
+    background:rgba(0,0,0,.3);
+    border:2px dashed var(--space-border);
+    border-radius:16px;
+    padding:14px;
+    min-height:180px;
+    transition:.25s;
+    cursor:pointer;
+  }
+  .dnd-zone.zone-factor{border-color:rgba(0,217,255,.4);}
+  .dnd-zone.zone-fsu{border-color:rgba(251,191,36,.4);}
+  .dnd-zone.zone-group{border-color:rgba(168,85,247,.4);}
+
+  .dnd-zone.over{
+    background:rgba(0,217,255,.1);
+    border-color:var(--cyan);
+    transform:scale(1.02);
+  }
+  .dnd-zone.done{
+    border-style:solid;
+    background:rgba(16,185,129,.06);
+  }
+
+  .zone-head{
+    text-align:center;
+    margin-bottom:12px;
+    padding-bottom:10px;
+    border-bottom:1px solid rgba(255,255,255,.1);
+  }
+  .zone-icon{font-size:28px;display:block;margin-bottom:4px;}
+  .zone-name{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;}
+  .zone-factor .zone-name{color:var(--cyan);}
+  .zone-fsu .zone-name{color:var(--gold);}
+  .zone-group .zone-name{color:var(--nebula);}
+  .zone-desc{font-size:11px;color:var(--text-dim);margin-top:2px;}
+
+  .zone-items{
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .zone-item{
+    background:rgba(16,185,129,.15);
+    border:1px solid rgba(16,185,129,.4);
+    border-radius:8px;
+    padding:8px 10px;
+    font-family:'Courier New',monospace;
+    font-size:13px;
+    color:#a7f3d0;
+    animation:popIn .3s ease;
+    font-weight:700;
+    text-align:center;
+  }
+  @keyframes popIn{
+    0%{transform:scale(.7);opacity:0;}
+    100%{transform:scale(1);opacity:1;}
+  }
+
+  /* ============ Викторина ============ */
+  .quiz{
+    background:rgba(0,0,0,.3);
+    border:1px solid var(--space-border);
+    border-radius:16px;
+    padding:20px;
+    margin-bottom:14px;
+    transition:.2s;
+  }
+  .quiz.solved{
+    border-color:rgba(16,185,129,.4);
+    background:rgba(16,185,129,.05);
+  }
+  .quiz-num{
+    display:inline-block;
+    background:linear-gradient(135deg, var(--cyan), var(--cyan-dim));
+    color:var(--space-deep);
+    font-size:12px;font-weight:900;
+    padding:3px 10px;border-radius:8px;
+    margin-bottom:12px;
+    box-shadow:0 0 15px rgba(0,217,255,.4);
+  }
+  .quiz-q{
+    font-size:15px;line-height:1.6;
+    margin-bottom:14px;
+    color:var(--text);
+  }
+  .quiz-q .math{
+    font-family:'Courier New',monospace;
+    background:rgba(0,217,255,.1);
+    color:#bfffe0;
+    padding:3px 10px;border-radius:6px;
+    border:1px solid rgba(0,217,255,.2);
+    display:inline-block;
+    font-weight:700;
+  }
+  .quiz-opts{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:10px;
+  }
+  @media(max-width:600px){.quiz-opts{grid-template-columns:1fr;}}
+  .quiz-opt{
+    background:rgba(30,41,66,.6);
+    border:1px solid var(--space-border);
+    border-radius:10px;
+    padding:12px 16px;
+    color:var(--text);
+    font-family:'Courier New',monospace;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    transition:.2s;
+    text-align:left;
+  }
+  .quiz-opt:hover:not(:disabled){
+    border-color:var(--cyan);
+    background:rgba(0,217,255,.1);
+    transform:translateX(3px);
+  }
+  .quiz-opt:disabled{cursor:not-allowed;}
+  .quiz-opt.correct{
+    background:rgba(16,185,129,.2);
+    border-color:var(--green);
+    color:#a7f3d0;
+    box-shadow:0 0 20px rgba(16,185,129,.4);
+  }
+  .quiz-opt.wrong{
+    background:rgba(239,68,68,.15);
+    border-color:var(--red);
+    color:#fca5a5;
+  }
+
+  /* ============ Открытый ответ ============ */
+  .open{
+    background:rgba(0,0,0,.3);
+    border:1px solid var(--space-border);
+    border-radius:16px;
+    padding:20px;
+    margin-bottom:14px;
+  }
+  .open.solved{
+    border-color:rgba(16,185,129,.4);
+    background:rgba(16,185,129,.05);
+  }
+  .open-q{
+    font-size:15px;line-height:1.6;
+    margin-bottom:14px;
+  }
+  .open-q .math{
+    font-family:'Courier New',monospace;
+    background:rgba(168,85,247,.15);
+    color:#e9d5ff;
+    padding:3px 10px;border-radius:6px;
+    border:1px solid rgba(168,85,247,.3);
+    display:inline-block;
+    font-weight:700;
+  }
+  .open-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .open-input{
+    flex:1;min-width:140px;
+    background:rgba(15,21,36,.8);
+    border:1px solid var(--space-border);
+    border-radius:10px;
+    padding:12px 16px;
+    color:var(--text);
+    font-size:14px;
+    font-family:'Courier New',monospace;
+    transition:.2s;
+  }
+  .open-input:focus{
+    outline:none;
+    border-color:var(--nebula);
+    box-shadow:0 0 0 3px rgba(168,85,247,.2);
+  }
+  .open-input:disabled{opacity:.6;}
+  .open-input.err{
+    border-color:var(--red);
+    animation:shake .4s;
+  }
+  .open-btn{
+    background:linear-gradient(135deg, var(--nebula), #7c3aed);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:12px 22px;
+    font-weight:800;
+    font-size:13px;
+    cursor:pointer;
+    transition:.2s;
+    font-family:inherit;
+    box-shadow:0 4px 14px rgba(168,85,247,.4);
+  }
+  .open-btn:hover:not(:disabled){
+    transform:translateY(-2px);
+    box-shadow:0 6px 20px rgba(168,85,247,.6);
+  }
+  .open-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .fb{
+    margin-top:10px;
+    padding:10px 14px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+    display:none;
+  }
+  .fb.show{display:block;animation:fadeIn .3s ease;}
+  .fb.ok{
+    background:rgba(16,185,129,.15);
+    color:#a7f3d0;
+    border:1px solid rgba(16,185,129,.3);
+  }
+  .fb.err{
+    background:rgba(239,68,68,.12);
+    color:#fca5a5;
+    border:1px solid rgba(239,68,68,.3);
+  }
+  .fb .hint{
+    display:block;margin-top:5px;
+    font-size:12px;
+    color:var(--text-dim);
+    font-style:italic;
+    font-weight:500;
+  }
+
+  /* ============ Toast ============ */
+  .toast{
+    position:fixed;
+    top:20px;left:50%;
+    transform:translateX(-50%) translateY(-100px);
+    background:linear-gradient(135deg, var(--gold), #f59e0b);
+    color:var(--space-deep);
+    padding:14px 26px;
+    border-radius:14px;
+    font-weight:800;
+    font-size:14px;
+    box-shadow:0 10px 40px rgba(251,191,36,.5), 0 0 30px rgba(251,191,36,.3);
+    transition:transform .4s cubic-bezier(.4,0,.2,1);
+    z-index:9999;
+    white-space:nowrap;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .toast.ok{
+    background:linear-gradient(135deg, var(--green), #059669);
+    color:#fff;
+    box-shadow:0 10px 40px rgba(16,185,129,.5);
+  }
+  .toast.err{
+    background:linear-gradient(135deg, var(--red), #dc2626);
+    color:#fff;
+    box-shadow:0 10px 40px rgba(239,68,68,.5);
+  }
+
+  /* ============ Финал ============ */
+  .final{
+    text-align:center;
+    padding:40px 20px;
+    background:linear-gradient(135deg, rgba(0,217,255,.1), rgba(168,85,247,.1));
+    border:2px solid var(--cyan);
+    border-radius:24px;
+    animation:fadeIn .6s ease;
+    box-shadow:0 0 60px rgba(0,217,255,.2);
+  }
+  .final .trophy{font-size:88px;margin-bottom:16px;animation:float 3s infinite;}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  .final h2{color:var(--cyan);font-size:28px;margin-bottom:12px;text-shadow:0 0 30px rgba(0,217,255,.6);}
+  .final p{color:var(--text-dim);font-size:15px;margin-bottom:20px;}
+
+  .final-ad{
+    margin-top:28px;
+    max-width:520px;
+    margin-left:auto;
+    margin-right:auto;
+    background:rgba(251,191,36,.08);
+    border:1px solid rgba(251,191,36,.3);
+    border-radius:16px;
+    padding:18px 22px;
+    text-align:center;
+    position:relative;
+  }
+  .final-ad::before{
+    content:'НАВИГАТОР СОВЕТУЕТ';
+    position:absolute;top:-9px;left:50%;
+    transform:translateX(-50%);
+    background:var(--space-deep);
+    color:var(--gold);
+    font-size:9px;font-weight:900;
+    letter-spacing:2px;
+    padding:3px 12px;
+    border-radius:8px;
+    border:1px solid rgba(251,191,36,.4);
+  }
+  .final-ad h4{color:var(--gold);font-size:15px;margin-bottom:6px;font-weight:800;}
+  .final-ad p{color:var(--text);font-size:13px;margin-bottom:12px;line-height:1.5;}
+  .final-ad a{
+    display:inline-flex;align-items:center;gap:6px;
+    background:linear-gradient(135deg, var(--gold), #f59e0b);
+    color:var(--space-deep);
+    text-decoration:none;
+    padding:10px 20px;
+    border-radius:10px;
+    font-weight:800;
+    font-size:13px;
+    transition:.2s;
+  }
+  .final-ad a:hover{transform:scale(1.05);box-shadow:0 4px 16px rgba(251,191,36,.5);}
+
+  /* ============ Футер ============ */
+  .footer{
+    text-align:center;
+    margin-top:20px;
+    padding:16px;
+    font-size:12px;
+    color:var(--text-dim);
+    border-top:1px solid var(--space-border);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .footer a{
+    color:var(--gold);
+    text-decoration:none;
+    font-weight:700;
+    transition:.2s;
+  }
+  .footer a:hover{color:var(--cyan);}
+
+  .btn{
+    background:linear-gradient(135deg, var(--cyan), var(--cyan-dim));
+    color:var(--space-deep);
+    border:none;
+    border-radius:12px;
+    padding:12px 24px;
+    font-weight:800;
+    font-size:14px;
+    cursor:pointer;
+    transition:.2s;
+    font-family:inherit;
+    box-shadow:0 4px 14px rgba(0,217,255,.4);
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,217,255,.6);}
+  .btn.gold{background:linear-gradient(135deg, var(--gold), #f59e0b);box-shadow:0 4px 14px rgba(251,191,36,.4);}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--space-border);}
+
+  /* ============ Адаптив ============ */
+  @media(max-width:700px){
+    .hud{grid-template-columns:1fr;gap:10px;}
+    .hud-center,.hud-right{justify-content:center;}
+    .panel{padding:16px;}
+    .panel-head h2{font-size:18px;}
+    .dnd-chips{grid-template-columns:1fr;}
+    .chip{font-size:13px;padding:12px 14px;}
+    .quiz-q{font-size:14px;}
+    .quiz-opt{font-size:13px;padding:10px 14px;}
+    .hud-avatar{width:44px;height:44px;font-size:20px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-left">
+      <div class="hud-avatar">🚀<span class="lvl" id="lvlBadge">1</span></div>
+      <div class="hud-info">
+        <div class="hud-name" id="rankName">Космический новичок</div>
+        <div class="hud-xp-bar"><div class="hud-xp-fill" id="xpFill"></div></div>
+        <div class="hud-xp-text">
+          <span id="xpText">0 / 100 XP</span>
+          <span id="xpLevel">Ур. 1</span>
+        </div>
+      </div>
+    </div>
+    <div class="hud-center">
+      <div class="hud-stat"><span class="v" id="hStreak">0</span><span class="l">Серия</span></div>
+      <div class="hud-stat"><span class="v" id="hSolved">0</span><span class="l">Решено</span></div>
+      <div class="hud-stat"><span class="v" id="hErrors">0</span><span class="l">Ошибки</span></div>
+    </div>
+    <div class="hud-right" id="badgesRow">
+      <a href="https://vk.com/smartskillsmaria" target="_blank" class="hud-ad" title="Онлайн-проект «Мягкая математика»">
+        <span class="dot"></span>🎓 Курсы
+      </a>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabs"></div>
+
+  <!-- Content -->
+  <div id="stage"></div>
+
+  <!-- Футер -->
+  <div class="footer">
+    <span>🚀 Космический тренажёр</span>
+    <span>·</span>
+    <a href="https://vk.com/smartskillsmaria" target="_blank">Онлайн-проект «Мягкая математика»</a>
+    <span>·</span>
+    <span>Подготовка к ОГЭ/ЕГЭ</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   ИГРОВАЯ МОДЕЛЬ
+   ============================================================ */
+const game = {
+  xp: 0,
+  level: 1,
+  xpPerLevel: 100,
+  streak: 0,
+  maxStreak: 0,
+  solved: 0,
+  errors: 0,
+  badges: new Set(),
+  loaded: false
+};
+
+const RANKS = [
+  'Космический новичок',
+  'Пилот звездолёта',
+  'Штурман галактики',
+  'Капитан флота',
+  'Командор сектора',
+  'Адмирал вселенной',
+  'Легенда космоса',
+  'Магистр-навигатор'
+];
+
+const BADGES = {
+  first_blood: {icon:'🎯', name:'Первый шаг', desc:'Решил первую задачу'},
+  streak3: {icon:'🔥', name:'Серия из 3', desc:'3 верных подряд'},
+  streak5: {icon:'⚡', name:'Серия из 5', desc:'5 верных подряд'},
+  streak10: {icon:'💥', name:'Непобедимый', desc:'10 верных подряд'},
+  dnd_master: {icon:'🛸', name:'Диспетчер', desc:'Разложил все многочлены по методам'},
+  quiz_master: {icon:'🧠', name:'Эксперт', desc:'Все викторины пройдены'},
+  graph_master: {icon:'📈', name:'Навигатор', desc:'Все точки проверены'},
+  level3: {icon:'⭐', name:'Уровень 3', desc:'Достиг 3 уровня'},
+  level5: {icon:'🌟', name:'Уровень 5', desc:'Достиг 5 уровня'}
+};
+
+/* ============================================================
+   СОХРАНЕНИЕ
+   ============================================================ */
+function save(){
+  try{
+    localStorage.setItem('space_poly_v1', JSON.stringify({
+      xp: game.xp,
+      level: game.level,
+      maxStreak: game.maxStreak,
+      solved: game.solved,
+      errors: game.errors,
+      badges: [...game.badges]
+    }));
+  }catch(e){}
+}
+
+function load(){
+  try{
+    const d = JSON.parse(localStorage.getItem('space_poly_v1') || '{}');
+    if(typeof d.xp === 'number') game.xp = d.xp;
+    if(typeof d.level === 'number') game.level = d.level;
+    if(typeof d.maxStreak === 'number') game.maxStreak = d.maxStreak;
+    if(typeof d.solved === 'number') game.solved = d.solved;
+    if(typeof d.errors === 'number') game.errors = d.errors;
+    if(Array.isArray(d.badges)) game.badges = new Set(d.badges);
+  }catch(e){}
+}
+
+/* ============================================================
+   XP / LEVEL / BADGES
+   ============================================================ */
+function addXP(amount, reason){
+  game.xp += amount;
+  let leveled = false;
+  while(game.xp >= game.xpPerLevel){
+    game.xp -= game.xpPerLevel;
+    game.level++;
+    game.xpPerLevel = 100 + (game.level - 1) * 40;
+    leveled = true;
+  }
+  if(reason) toast('+' + amount + ' XP · ' + reason, 'ok');
+  if(leveled){
+    setTimeout(() => {
+      toast('⭐ Уровень ' + game.level + '! ' + RANKS[Math.min(game.level-1, RANKS.length-1)], 'ok');
+      if(game.level >= 3) unlockBadge('level3');
+      if(game.level >= 5) unlockBadge('level5');
+    }, 600);
+  }
+  save();
+  renderHUD();
+}
+
+function unlockBadge(id){
+  if(game.badges.has(id)) return;
+  const b = BADGES[id];
+  if(!b) return;
+  game.badges.add(id);
+  setTimeout(() => toast(b.icon + ' Достижение: ' + b.name, 'ok'), 300);
+  save();
+  renderHUD();
+}
+
+function toast(msg, type){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function renderHUD(){
+  document.getElementById('xpFill').style.width = (game.xp / game.xpPerLevel * 100) + '%';
+  document.getElementById('xpText').textContent = game.xp + ' / ' + game.xpPerLevel + ' XP';
+  document.getElementById('xpLevel').textContent = 'Ур. ' + game.level;
+  document.getElementById('lvlBadge').textContent = game.level;
+  document.getElementById('rankName').textContent = RANKS[Math.min(game.level-1, RANKS.length-1)];
+  document.getElementById('hStreak').textContent = game.streak;
+  document.getElementById('hSolved').textContent = game.solved;
+  document.getElementById('hErrors').textContent = game.errors;
+
+  const row = document.getElementById('badgesRow');
+  row.innerHTML = '';
+
+  // Рекламная ссылка остаётся первой
+  const ad = document.createElement('a');
+  ad.href = 'https://vk.com/smartskillsmaria';
+  ad.target = '_blank';
+  ad.className = 'hud-ad';
+  ad.title = 'Онлайн-проект «Мягкая математика»';
+  ad.innerHTML = '<span class="dot"></span>🎓 Курсы';
+  row.appendChild(ad);
+
+  // Достижения
+  Object.entries(BADGES).forEach(([id, b]) => {
+    const el = document.createElement('div');
+    el.className = 'badge' + (game.badges.has(id) ? ' on' : '');
+    el.textContent = b.icon;
+    el.title = b.name + ' — ' + b.desc;
+    row.appendChild(el);
+  });
+}
+
+/* ============================================================
+   ДАННЫЕ ЗАДАЧ
+   ============================================================ */
+
+// DnD: классификация многочленов по методу
+const DND_TASKS = [
+  {text:'5x + 10', method:'factor'},
+  {text:'3a − 9b', method:'factor'},
+  {text:'x² − 25', method:'fsu'},
+  {text:'a² + 4a + 4', method:'fsu'},
+  {text:'ax + ay + 3x + 3y', method:'group'},
+  {text:'9x² − 16', method:'fsu'},
+  {text:'2m + 2n + km + kn', method:'group'},
+  {text:'x² − 2x + 1', method:'fsu'},
+  {text:'12x − 18y', method:'factor'},
+  {text:'x³ + x² + x + 1', method:'group'},
+  {text:'4x² − 12x + 9', method:'fsu'},
+  {text:'7a + 14b', method:'factor'}
+];
+
+// Викторина: вынесение
+const QUIZ_FACTOR = [
+  {q:'Вынесите общий множитель: <span class="math">6x + 9y</span>',
+   opts:['3(2x + 3y)', '6(x + y)', '9(x + y)', '3(6x + 9y)'], correct:0,
+   hint:'НОД(6, 9) = 3 → выносим 3'},
+  {q:'Вынесите общий множитель: <span class="math">4a − 8b</span>',
+   opts:['4(a − 2b)', '4(a − 8b)', '2(2a − 4b)', '8(a − b)'], correct:0,
+   hint:'НОД(4, 8) = 4 → выносим 4'},
+  {q:'Вынесите общий множитель: <span class="math">15x² + 20x</span>',
+   opts:['5x(3x + 4)', '5(3x² + 4x)', 'x(15x + 20)', '5x(3x + 20)'], correct:0,
+   hint:'Общий множитель: 5x'},
+  {q:'Вынесите общий множитель: <span class="math">12x³ − 18x²</span>',
+   opts:['6x²(2x − 3)', '6(2x³ − 3x²)', 'x²(12x − 18)', '3x²(4x − 6)'], correct:0,
+   hint:'Общий множитель: 6x²'},
+  {q:'Сократите дробь: <span class="math">(6a + 9b) / 3</span>',
+   opts:['2a + 3b', '6a + 3b', '2a + 9b', '3(2a + 3b)'], correct:0,
+   hint:'Вынеси 3 в числителе и сократи'}
+];
+
+// Викторина: ФСУ
+const QUIZ_FSU = [
+  {q:'Разложите на множители: <span class="math">x² − 36</span>',
+   opts:['(x − 6)(x + 6)', '(x − 36)', '(x − 18)(x + 2)', '(x − 6)²'], correct:0,
+   hint:'Разность квадратов: a² − b² = (a−b)(a+b)'},
+  {q:'Разложите на множители: <span class="math">a² + 10a + 25</span>',
+   opts:['(a + 5)²', '(a + 25)', '(a + 5)(a − 5)', '(a + 10)²'], correct:0,
+   hint:'Квадрат суммы: a² + 2ab + b² = (a+b)²'},
+  {q:'Разложите на множители: <span class="math">9y² − 1</span>',
+   opts:['(3y − 1)(3y + 1)', '(3y − 1)²', '(9y − 1)', '(3y + 1)²'], correct:0,
+   hint:'Разность квадратов: (3y)² − 1²'},
+  {q:'Разложите на множители: <span class="math">4x² − 12x + 9</span>',
+   opts:['(2x − 3)²', '(2x − 3)(2x + 3)', '(4x − 3)²', '(x − 3)(4x − 3)'], correct:0,
+   hint:'Квадрат разности: (2x)² − 2·2x·3 + 3²'},
+  {q:'Сократите дробь: <span class="math">(x² − 9) / (x + 3)</span>',
+   opts:['x − 3', 'x + 3', 'x² − 3', 'x + 9'], correct:0,
+   hint:'Числитель = (x−3)(x+3), сокращаем на (x+3)'},
+  {q:'Сократите дробь: <span class="math">(a² − 4) / (a − 2)</span>',
+   opts:['a + 2', 'a − 2', 'a² + 2', 'a + 4'], correct:0,
+   hint:'a² − 4 = (a−2)(a+2)'}
+];
+
+// Викторина: группировка
+const QUIZ_GROUP = [
+  {q:'Разложите на множители: <span class="math">ax + ay + 3x + 3y</span>',
+   opts:['(a + 3)(x + y)', '(a + x)(3 + y)', '(a + 3x)(y + 3)', '(ax + ay)(3x + 3y)'], correct:0,
+   hint:'Группируем: a(x+y) + 3(x+y)'},
+  {q:'Разложите на множители: <span class="math">x² + 3x + 2x + 6</span>',
+   opts:['(x + 2)(x + 3)', '(x + 6)(x + 1)', '(x² + 3)(x + 2)', '(x + 2)(x + 6)'], correct:0,
+   hint:'Группируем: x(x+3) + 2(x+3)'},
+  {q:'Разложите на множители: <span class="math">2m + 2n + km + kn</span>',
+   opts:['(2 + k)(m + n)', '(2m + k)(2n + k)', '(m + k)(n + 2)', '(m + n + k)'], correct:0,
+   hint:'Группируем: 2(m+n) + k(m+n)'},
+  {q:'Разложите на множители: <span class="math">a² + ab + ac + bc</span>',
+   opts:['(a + b)(a + c)', '(a + c)(b + c)', '(a + b)(b + c)', '(a² + b)(c + 1)'], correct:0,
+   hint:'Группируем: a(a+b) + c(a+b)'},
+  {q:'Разложите на множители: <span class="math">x³ + x² + x + 1</span>',
+   opts:['(x + 1)(x² + 1)', '(x² + 1)(x + x)', '(x + 1)(x² + x)', '(x³ + 1)(x + 1)'], correct:0,
+   hint:'Группируем: x²(x+1) + 1(x+1)'}
+];
+
+// Открытый ответ: точка на графике
+const OPEN_TASKS = [
+  {q:'Принадлежит ли точка <span class="math">A(2; 5)</span> графику функции <span class="math">y = 2x + 1</span>?',
+   ans:'да', hint:'2·2 + 1 = 5 ✓'},
+  {q:'Принадлежит ли точка <span class="math">B(3; 7)</span> графику функции <span class="math">y = x² − 2</span>?',
+   ans:'да', hint:'3² − 2 = 7 ✓'},
+  {q:'Принадлежит ли точка <span class="math">C(1; 4)</span> графику функции <span class="math">y = x² + 3</span>?',
+   ans:'да', hint:'1² + 3 = 4 ✓'},
+  {q:'Принадлежит ли точка <span class="math">D(−2; 3)</span> графику функции <span class="math">y = |x| + 1</span>?',
+   ans:'да', hint:'|−2| + 1 = 3 ✓'},
+  {q:'Принадлежит ли точка <span class="math">E(4; 2)</span> графику функции <span class="math">y = 1/x</span>?',
+   ans:'нет', hint:'1/4 = 0,25 ≠ 2'},
+  {q:'Принадлежит ли точка <span class="math">F(0; 0)</span> графику функции <span class="math">y = 1/x</span>?',
+   ans:'нет', hint:'x = 0 не входит в ОДЗ'},
+  {q:'Принадлежит ли точка <span class="math">G(−1; 4)</span> графику функции <span class="math">y = 2x² + 2</span>?',
+   ans:'да', hint:'2·1 + 2 = 4 ✓'},
+  {q:'Принадлежит ли точка <span class="math">H(2; 6)</span> графику функции <span class="math">y = x² + 1</span>?',
+   ans:'нет', hint:'2² + 1 = 5 ≠ 6'}
+];
+
+/* ============================================================
+   СОСТОЯНИЕ
+   ============================================================ */
+const state = {
+  tab: 'dnd',
+  dndSolved: new Set(),
+  quizFactorSolved: new Set(),
+  quizFsuSolved: new Set(),
+  quizGroupSolved: new Set(),
+  openSolved: new Set(),
+  selectedChip: null
+};
+
+/* ============================================================
+   ТАБЫ
+   ============================================================ */
+const TABS = [
+  {id:'dnd', icon:'🛸', name:'Выбор метода', type:'dnd'},
+  {id:'factor', icon:'🚀', name:'Вынесение', type:'quiz', data:QUIZ_FACTOR, solvedSet:'quizFactorSolved'},
+  {id:'fsu', icon:'⭐', name:'ФСУ', type:'quiz', data:QUIZ_FSU, solvedSet:'quizFsuSolved'},
+  {id:'group', icon:'🌌', name:'Группировка', type:'quiz', data:QUIZ_GROUP, solvedSet:'quizGroupSolved'},
+  {id:'graph', icon:'📈', name:'Точка на орбите', type:'open', data:OPEN_TASKS, solvedSet:'openSolved'}
+];
+
+function renderTabs(){
+  const t = document.getElementById('tabs');
+  t.innerHTML = '';
+  TABS.forEach(tab => {
+    let solved = 0, total = 0;
+    if(tab.type === 'dnd'){
+      solved = state.dndSolved.size;
+      total = DND_TASKS.length;
+    } else if(tab.type === 'quiz'){
+      solved = state[tab.solvedSet].size;
+      total = tab.data.length;
+    } else if(tab.type === 'open'){
+      solved = state[tab.solvedSet].size;
+      total = tab.data.length;
+    }
+    const done = solved === total && total > 0;
+    const el = document.createElement('div');
+    el.className = 'tab' + (state.tab === tab.id ? ' active' : '') + (done ? ' done' : '');
+    el.innerHTML = tab.icon + ' ' + tab.name + ' <span class="cnt">' + solved + '/' + total + '</span>';
+    el.onclick = () => {
+      state.tab = tab.id;
+      renderTabs();
+      renderStage();
+    };
+    t.appendChild(el);
+  });
+}
+
+/* ============================================================
+   РЕНДЕР
+   ============================================================ */
+function renderStage(){
+  const stage = document.getElementById('stage');
+  const tab = TABS.find(t => t.id === state.tab);
+  if(!tab) return;
+
+  if(tab.type === 'dnd') renderDND(stage);
+  else if(tab.type === 'quiz') renderQuiz(stage, tab);
+  else if(tab.type === 'open') renderOpen(stage, tab);
+}
+
+/* ============================================================
+   DND: КЛАССИФИКАЦИЯ
+   ============================================================ */
+function renderDND(stage){
+  const remaining = DND_TASKS.filter((_, i) => !state.dndSolved.has(i));
+
+  stage.innerHTML = `
+    <div class="panel">
+      <div class="panel-head">
+        <h2>🛸 Выбор метода</h2>
+        <p class="sub">Перетащи каждый многочлен в отсек с правильным методом. Или кликни на чип, затем на отсек.</p>
+      </div>
+
+      <div class="dnd-intro">
+        <strong>💡 Три метода:</strong><br>
+        🔹 <b>Вынесение</b> — общий множитель у всех слагаемых<br>
+        🔹 <b>ФСУ</b> — разность квадратов, квадрат суммы/разности<br>
+        🔹 <b>Группировка</b> — объединяем слагаемые в группы
+      </div>
+
+      <div class="dnd-chips" id="dndChips">
+        ${remaining.map((task, i) => {
+          const realIdx = DND_TASKS.indexOf(task);
+          return `<div class="chip" draggable="true" data-idx="${realIdx}">${task.text}</div>`;
+        }).join('')}
+      </div>
+
+      <div class="dnd-zones">
+        <div class="dnd-zone zone-factor" data-method="factor">
+          <div class="zone-head">
+            <span class="zone-icon">🚀</span>
+            <div class="zone-name">Вынесение</div>
+            <div class="zone-desc">Общий множитель</div>
+          </div>
+          <div class="zone-items" id="zone-factor"></div>
+        </div>
+        <div class="dnd-zone zone-fsu" data-method="fsu">
+          <div class="zone-head">
+            <span class="zone-icon">⭐</span>
+            <div class="zone-name">ФСУ</div>
+            <div class="zone-desc">Формулы сокращённого умножения</div>
+          </div>
+          <div class="zone-items" id="zone-fsu"></div>
+        </div>
+        <div class="dnd-zone zone-group" data-method="group">
+          <div class="zone-head">
+            <span class="zone-icon">🌌</span>
+            <div class="zone-name">Группировка</div>
+            <div class="zone-desc">Группы слагаемых</div>
+          </div>
+          <div class="zone-items" id="zone-group"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const chips = stage.querySelectorAll('.chip');
+  const zones = stage.querySelectorAll('.dnd-zone');
+
+  chips.forEach(chip => {
+    chip.addEventListener('dragstart', e => {
+      state.selectedChip = +chip.dataset.idx;
+      chip.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', chip.dataset.idx); } catch(err){}
+    });
+    chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      state.selectedChip = +chip.dataset.idx;
+    });
+  });
+
+  zones.forEach(zone => {
+    zone.addEventListener('dragover', e => {
+      e.preventDefault();
+      zone.classList.add('over');
+    });
+    zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('over');
+      let idx = state.selectedChip;
+      try {
+        const data = e.dataTransfer.getData('text/plain');
+        if(data !== '') idx = +data;
+      } catch(err){}
+      if(idx === null || idx === undefined) return;
+      handleDNDDrop(idx, zone);
+    });
+
+    zone.addEventListener('click', () => {
+      if(state.selectedChip === null) return;
+      handleDNDDrop(state.selectedChip, zone);
+    });
+  });
+}
+
+function handleDNDDrop(idx, zone){
+  const task = DND_TASKS[idx];
+  if(!task) return;
+  const method = zone.dataset.method;
+
+  if(task.method === method){
+    state.dndSolved.add(idx);
+    state.selectedChip = null;
+    game.solved++;
+    game.streak++;
+    if(game.streak > game.maxStreak) game.maxStreak = game.streak;
+    if(game.solved === 1) unlockBadge('first_blood');
+    if(game.streak >= 3) unlockBadge('streak3');
+    if(game.streak >= 5) unlockBadge('streak5');
+    if(game.streak >= 10) unlockBadge('streak10');
+    addXP(15, 'верный метод');
+    if(state.dndSolved.size === DND_TASKS.length){
+      unlockBadge('dnd_master');
+    }
+    renderTabs();
+    renderStage();
+  } else {
+    game.errors++;
+    game.streak = 0;
+    toast('❌ Не тот отсек', 'err');
+    save();
+    renderHUD();
+  }
+}
+
+/* ============================================================
+   QUIZ
+   ============================================================ */
+function renderQuiz(stage, tab){
+  const questions = tab.data;
+  const solvedSet = state[tab.solvedSet];
+
+  stage.innerHTML = `
+    <div class="panel">
+      <div class="panel-head">
+        <h2>${tab.icon} ${tab.name}</h2>
+        <p class="sub">Выбери правильный ответ. Каждый верный ответ — +20 XP.</p>
+      </div>
+      <div id="quizList"></div>
+    </div>
+  `;
+
+  const list = document.getElementById('quizList');
+  questions.forEach((q, i) => {
+    const solved = solvedSet.has(i);
+    const div = document.createElement('div');
+    div.className = 'quiz' + (solved ? ' solved' : '');
+    div.innerHTML = `
+      <span class="quiz-num">№ ${i + 1}</span>
+      <div class="quiz-q">${q.q}</div>
+      <div class="quiz-opts">
+        ${q.opts.map((opt, oi) => `
+          <button class="quiz-opt ${solved && oi === q.correct ? 'correct' : ''}"
+                  data-q="${i}" data-o="${oi}" ${solved ? 'disabled' : ''}>
+            ${opt}
+          </button>
+        `).join('')}
+      </div>
+    `;
+    list.appendChild(div);
+  });
+
+  list.querySelectorAll('.quiz-opt').forEach(btn => {
+    if(btn.disabled) return;
+    btn.onclick = () => handleQuizAnswer(btn, tab);
+  });
+}
+
+function handleQuizAnswer(btn, tab){
+  const qi = +btn.dataset.q;
+  const oi = +btn.dataset.o;
+  const q = tab.data[qi];
+  const solvedSet = state[tab.solvedSet];
+  const quizEl = btn.closest('.quiz');
+
+  const allOpts = quizEl.querySelectorAll('.quiz-opt');
+  allOpts.forEach(o => o.disabled = true);
+
+  if(oi === q.correct){
+    btn.classList.add('correct');
+    solvedSet.add(qi);
+    game.solved++;
+    game.streak++;
+    if(game.streak > game.maxStreak) game.maxStreak = game.streak;
+    if(game.solved === 1) unlockBadge('first_blood');
+    if(game.streak >= 3) unlockBadge('streak3');
+    if(game.streak >= 5) unlockBadge('streak5');
+    if(game.streak >= 10) unlockBadge('streak10');
+    addXP(20, 'верно!');
+    quizEl.classList.add('solved');
+
+    if(solvedSet.size === tab.data.length){
+      if(tab.id === 'factor' || tab.id === 'fsu' || tab.id === 'group') unlockBadge('quiz_master');
+    }
+
+    renderTabs();
+    setTimeout(() => renderStage(), 800);
+  } else {
+    btn.classList.add('wrong');
+    allOpts[q.correct].classList.add('correct');
+    game.errors++;
+    game.streak = 0;
+    toast('❌ Неверно', 'err');
+    save();
+    renderHUD();
+  }
+}
+
+/* ============================================================
+   OPEN ANSWER
+   ============================================================ */
+function renderOpen(stage, tab){
+  const tasks = tab.data;
+  const solvedSet = state[tab.solvedSet];
+
+  stage.innerHTML = `
+    <div class="panel">
+      <div class="panel-head">
+        <h2>${tab.icon} ${tab.name}</h2>
+        <p class="sub">Ответь «да» или «нет». Проверь, лежит ли точка на графике функции. +15 XP за верный ответ.</p>
+      </div>
+      <div id="openList"></div>
+    </div>
+  `;
+
+  const list = document.getElementById('openList');
+  tasks.forEach((t, i) => {
+    const solved = solvedSet.has(i);
+    const div = document.createElement('div');
+    div.className = 'open' + (solved ? ' solved' : '');
+    div.innerHTML = `
+      <div class="open-q"><b>№ ${i + 1}.</b> ${t.q}</div>
+      <div class="open-row">
+        <input type="text" class="open-input"
+               placeholder="да / нет"
+               value="${solved ? '✓' : ''}"
+               ${solved ? 'disabled' : ''}>
+        <button class="open-btn" ${solved ? 'disabled' : ''}>
+          ${solved ? '✓ Решено' : 'Проверить'}
+        </button>
+      </div>
+      <div class="fb" id="fb-open-${i}"></div>
+    `;
+    list.appendChild(div);
+  });
+
+  list.querySelectorAll('.open-input').forEach((inp, i) => {
+    if(inp.disabled) return;
+    inp.addEventListener('keydown', e => {
+      if(e.key === 'Enter') {
+        const btn = inp.parentElement.querySelector('.open-btn');
+        if(btn && !btn.disabled) btn.click();
+      }
+    });
+  });
+
+  list.querySelectorAll('.open-btn').forEach((btn, i) => {
+    if(btn.disabled) return;
+    btn.onclick = () => handleOpenAnswer(btn, i, tab);
+  });
+}
+
+function handleOpenAnswer(btn, i, tab){
+  const task = tab.data[i];
+  const input = btn.parentElement.querySelector('.open-input');
+  const fb = document.getElementById('fb-open-' + i);
+  const answer = input.value.trim().toLowerCase();
+
+  const correct = normalizeAnswer(answer) === normalizeAnswer(task.ans);
+
+  fb.classList.add('show');
+
+  if(correct){
+    fb.className = 'fb ok show';
+    fb.textContent = '✅ Верно! +15 XP';
+    input.disabled = true;
+    btn.disabled = true;
+    btn.textContent = '✓ Решено';
+    input.closest('.open').classList.add('solved');
+    state[tab.solvedSet].add(i);
+    game.solved++;
+    game.streak++;
+    if(game.streak > game.maxStreak) game.maxStreak = game.streak;
+    if(game.solved === 1) unlockBadge('first_blood');
+    if(game.streak >= 3) unlockBadge('streak3');
+    if(game.streak >= 5) unlockBadge('streak5');
+    if(game.streak >= 10) unlockBadge('streak10');
+    addXP(15, 'верно!');
+    if(state[tab.solvedSet].size === tab.data.length){
+      unlockBadge('graph_master');
+    }
+    renderTabs();
+  } else {
+    fb.className = 'fb err show';
+    fb.innerHTML = '❌ Неверно. <span class="hint">💡 ' + task.hint + '</span>';
+    input.classList.add('err');
+    setTimeout(() => input.classList.remove('err'), 500);
+    game.errors++;
+    game.streak = 0;
+    save();
+    renderHUD();
+  }
+}
+
+function normalizeAnswer(s){
+  let n = String(s).toLowerCase().trim()
+    .replace(/\s+/g, '')
+    .replace(/ё/g, 'е');
+  if(n === 'yes' || n === 'y' || n === 'true' || n === '1' || n === 'да' || n === 'д' || n === '+') return 'да';
+  if(n === 'no' || n === 'n' || n === 'false' || n === '0' || n === 'нет' || n === 'н' || n === '-') return 'нет';
+  return n;
+}
+
+/* ============================================================
+   ФИНАЛ + РЕКЛАМА
+   ============================================================ */
+function checkAllDone(){
+  const allDnd = state.dndSolved.size === DND_TASKS.length;
+  const allFactor = state.quizFactorSolved.size === QUIZ_FACTOR.length;
+  const allFsu = state.quizFsuSolved.size === QUIZ_FSU.length;
+  const allGroup = state.quizGroupSolved.size === QUIZ_GROUP.length;
+  const allOpen = state.openSolved.size === OPEN_TASKS.length;
+
+  if(allDnd && allFactor && allFsu && allGroup && allOpen){
+    showFinal();
+  }
+}
+
+function showFinal(){
+  const stage = document.getElementById('stage');
+  const total = DND_TASKS.length + QUIZ_FACTOR.length + QUIZ_FSU.length + QUIZ_GROUP.length + OPEN_TASKS.length;
+  const denom = game.solved + game.errors;
+  const accuracy = denom > 0 ? Math.round(game.solved / denom * 100) : 100;
+
+  stage.innerHTML = `
+    <div class="final">
+      <div class="trophy">🏆</div>
+      <h2>Миссия выполнена!</h2>
+      <p>Ты прошёл все задания: разложение многочленов, ФСУ, группировка и графики.</p>
+      <div style="font-size:48px;font-weight:900;color:var(--gold);margin:16px 0">${game.solved} / ${total}</div>
+      <p>Точность: <strong style="color:var(--cyan)">${accuracy}%</strong> · Максимальная серия: <strong style="color:var(--gold)">${game.maxStreak}</strong></p>
+
+      <div class="final-ad">
+        <h4>🎓 Понравился тренажёр?</h4>
+        <p>В онлайн-проекте «Мягкая математика» — ещё больше интерактивов, задач и разборов. Готовим к ОГЭ и ЕГЭ без стресса.</p>
+        <a href="https://vk.com/smartskillsmaria" target="_blank">
+          🚀 Узнать о курсах →
+        </a>
+      </div>
+
+      <div style="margin-top:20px">
+        <button class="btn gold" onclick="restartAll()">🔄 Пройти заново</button>
+      </div>
+    </div>
+  `;
+
+  toast('🏆 Все задания пройдены!', 'ok');
+}
+
+function restartAll(){
+  state.dndSolved = new Set();
+  state.quizFactorSolved = new Set();
+  state.quizFsuSolved = new Set();
+  state.quizGroupSolved = new Set();
+  state.openSolved = new Set();
+  state.selectedChip = null;
+  game.solved = 0;
+  game.streak = 0;
+  save();
+  renderHUD();
+  renderTabs();
+  renderStage();
+}
+
+/* Переопределяем проверку после каждого ответа */
+const originalHandleDNDDrop = handleDNDDrop;
+handleDNDDrop = function(idx, zone){
+  originalHandleDNDDrop(idx, zone);
+  checkAllDone();
+};
+
+const originalHandleQuizAnswer = handleQuizAnswer;
+handleQuizAnswer = function(btn, tab){
+  originalHandleQuizAnswer(btn, tab);
+  setTimeout(checkAllDone, 100);
+};
+
+const originalHandleOpenAnswer = handleOpenAnswer;
+handleOpenAnswer = function(btn, i, tab){
+  originalHandleOpenAnswer(btn, i, tab);
+  checkAllDone();
+};
+
+/* ============================================================
+   СТАРТ
+   ============================================================ */
+load();
+renderHUD();
+renderTabs();
+renderStage();
+</script>
+
+</body>
+</html>
